@@ -1,0 +1,20 @@
+version: '2.1'
+services:
+   zabbix-agent:
+     image: zabbix/zabbix-agent:alpine-3.4-latest
+     container_name: zabbix-${NAME}
+     hostname: zabbix-${NAME}
+     environment:
+       - ZBX_HOSTNAME=zabbix-${NAME}
+       - ZBX_SERVER_HOST=<<<<<<>>>>>>
+       - HTTP_PROXY=<<<<<<>>>>>>
+       - HTTPS_PROXY=<<<<<<>>>>>>
+     ports:
+       - ##PORT##:10050/tcp
+     networks:
+      - main
+     restart: always
+
+networks:
+  main:
+

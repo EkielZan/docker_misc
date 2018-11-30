@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+
+
+_getContainerName ()   #  By convention, the function name
+{                 #+ starts with an underscore.
+  local cur
+  COMPREPLY=()   # Array variable storing the possible completions.
+  cur="${COMP_WORDS[COMP_CWORD]}"
+
+  case "$cur" in
+    *)
+    COMPREPLY=( $( compgen -W '$(docker ps -a --format '{{.Names}}')' -- $cur ) );;
+  esac
+
+  return 0
+}
+
+
+_getDockerOptions ()   #  By convention, the function name
+{                 #+ starts with an underscore.
+  local cur
+  COMPREPLY=()   # Array variable storing the possible completions.
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+  case "$prev" in
+    docker)
+       COMPREPLY=( $( compgen -W "$(docker help | grep ^'    [a-z]' | awk '{ print $1 }')" -- $cur ) )
+       ;;
+    volume)
+       COMPREPLY=( $( compgen -W "$(docker volume --help | grep ^'  [a-z]' | awk '{ print $1 }')" -- $cur ) )
+       ;;
+    network)
+       COMPREPLY=( $( compgen -W "$(docker network --help | grep ^'  [a-z]' | awk '{ print $1 }')" -- $cur ) )
+       ;;
+  esac
+
+  return 0
+}
+
+complete -F _getContainerName dcc
+complete -F _getContainerName dcr
+complete -F _getContainerName dstart
+complete -F _getContainerName dstop
+complete -F _getContainerName drestart
+complete -F _getDockerOptions docker
+complete -F _getContainerName dtail
+
+#
+
+#complete -W "$(docker ps -a --format '{{.Names}}')" dcc
+#complete -W "$(docker help | grep ^'    [a-z]' | awk '{ print $1 }')" docker
+

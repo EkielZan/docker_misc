@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+for i in $( docker ps --format "{{.Names}}");do
+  #echo -e "$i"
+  port=$(docker port $i | cut -d":" -f 2)
+  echo $i - $port 
+done | sort | column -t
+

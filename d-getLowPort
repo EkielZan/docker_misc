@@ -1,0 +1,11 @@
+mkdir /tmp/portPlay
+range=$(cat ~/project_info | grep 'dedicated ports' | cut -d':' -f 2 | tr -d ' ')
+do=$(echo $range | cut -d '-' -f1)
+up=$(echo $range | cut -d '-' -f2)
+/$USER/bin/d-listPort > /tmp/portPlay/listport
+for i in $(seq $do 1 $up);do
+echo $i
+done > /tmp/portPlay/rangeport
+valur=$(grep -v -f /tmp/portPlay/listport /tmp/portPlay/rangeport | head -1)
+echo "RUNDECK:DATA:LowPort = $valur"
+rm -fr /tmp/portPlay

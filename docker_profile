@@ -1,0 +1,207 @@
+#docker profile
+####
+
+. /etc/profile.d/bash_completion.sh
+. ~/.beautify
+
+####
+
+[[ $- == *i* ]] && stty -ixon
+export DOCKER_PROJECT=
+export DOCKER_SOCKET=/var/run/docker.sock
+export DOCKER_HOST=unix://$DOCKER_SOCKET
+export WS=/${DOCKER_PROJECT}
+export dockCert=$WS/certs/client
+export dbin=$WS/bin
+export dconfig=$WS/config
+export dmisc=$WS/misc
+export dimg=$WS/images
+export dtmp=$WS/tmp
+export WORKING_PROJECT=3pp
+export PATH=$PATH:/usr/local/bin:$dbin
+export PS1="${USER}@${HOSTNAME}:\${PWD} \n${WORKING_PROJECT} > "
+export dockerParam="--unix-socket $DOCKER_SOCKET --cert $dockCert/cert.pem --key $dockCert/key.pem --cacert $dockCert/ca.pem http:/containers/portainer/json"
+
+
+alias ll='ls -lart'
+alias dcc='_(){ dockerConnect x$1; }; _'
+alias dcl="dockerContainerList"
+alias dcla="dockerContainerList all"
+alias dco='_(){ docker commit $1 $2; }; _'
+alias dcpcc="copyFromContainerToContainer"
+alias dcp="docker cp"
+alias dcr='_(){ dockerConnect x$1 0; }; _'
+alias dcsc='_(){ setWorkingContainer $1; }; _'
+alias dcsp='_(){ setWorkingProject $1; }; _'
+alias dcu='_(){ dockerConnect $1 $2; }; _'
+alias ddang='docker images -a -f "dangling=true"'
+alias dprune='docker images -a -f "dangling=true" -q | xargs docker rmi'
+alias dil="docker images | grep -v REPOSITORY | awk '{ print  \$1 \":\" \$2 }'"
+alias docomm='_(){ dockerCommit $1 $2 ; }; _'
+alias docomp='_(){ compose -p $1 -f $2 up -d $3; }; _'
+alias dpl='listDockerProject'
+alias dps='_(){ betterDockerPS x$1; }; _'
+alias dpsa='_(){ betterDockerPS x$1 0; }; _'
+alias drestart='_(){ dockerPowerManager x$1 2; }; _'
+alias dstart='_(){ dockerPowerManager x$1 1; }; _'
+alias dstop='_(){ dockerPowerManager x$1 0; }; _'
+alias dtail='docker logs -f'
+alias dvolar='_(){ docker run --rm --volumes-from $1 -u 0 -v $(pwd):/archive rhel7 -c "cd $3 && tar cvf /archive/backup_$2.tar ."; }; _'
+alias dvolre='_(){ docker run --rm --volumes-from $1 -u 0 -v $(pwd):/archive rhel7 -c "cd $3 && tar xvf /archive/backup_$2.tar --strip 1"; }; _'
+alias docInfo="cat ~/project_info"
+alias compose="docker-compose"
+alias godo="goDockerDir"
+alias pk_chenv=dcsp
+alias dsize="docker ps -as --format "{{.Names}}\t{{.Image}}\t\t{{.Size}}" | sort| column -t"
+
+function dockerCommit {
+    cont=$1
+    if [[ $2 == '' ]];then
+      img=$1
+    else
+      img=$2
+    fi   
+   docker commit $cont $img
+}
+
+function betterDockerPS {
+     if [[ $1 == 'x' && $WORKING_PROJECT != '' ]];then
+       c2c=$WORKING_PROJECT
+     else
+       c2c=${1#x}
+     fi
+     if [[ $2 == '' ]];then
+       docker ps -a --format "{{.Names}}\t{{.Image}}\t{{.RunningFor}}\t\t{{.Status}}" |sort| column -t | grep $c2c
+     else
+       docker ps -a --format "{{.Names}}\t{{.Image}}\t{{.RunningFor}}\t\t{{.Status}}" |sort| column -t 
+     fi
+}
+
+function goDockerDir {
+     if [[ -d $dconfig/$1 ]];then
+        cd $dconfig/$WORKING_PROJECT
+     else
+       echo -e "${RED_F}Docker Project $1 doesn't exist${NORM}"
+     fi
+}
+
+function dockerConnect {
+        if [[ $1 == 'x' && $WORKING_CONTAINER != '' ]];then
+                c2c=$WORKING_CONTAINER
+        else
+                c2c=${1#x}
+                setWorkingContainer $c2c
+        fi
+        if [[ $2 == '' ]];then
+                conu=""
+        else
+                conu="-u $2"
+        fi
+        DefShell=$(dockerShellCheck $c2c)
+        docker exec $conu -it $c2c $DefShell -l
+        if [[ $? == 255 ]];then
+                echo -e "Shell ${RED_F}$DefShell${NORM} is not working"
+                echo -e "Trying to fall back to ${GREEN_F}sh${NORM}"
+                docker exec $conu -it $c2c sh
+        fi
+}
+
+function dockerShellCheck {
+        DefShell="sh"
+        docker inspect $1 | grep ksh >/dev/null
+        if [[ $? == 0 ]];then
+                DefShell="ksh"
+        fi
+        echo $DefShell
+}
+
+function dockerContainerList {
+        if [[ $1 == '' ]];then
+          WPRJ=$WORKING_PROJECT
+        else
+          WPRJ=$1
+        fi
+        if [[ $WPRJ == "all" ]];then
+          WPRJ='[a-z]'
+        fi
+        for line in $(docker ps -a --format='{{.Names}}#{{.Status}}'|sed "s/ /#/g"|cut -d '#' -f 1-2|grep $WPRJ|sort -u);do
+           co=$(echo $line | cut -d '#' -f 1)
+           st=$(echo $line | cut -d '#' -f 2)
+           if [[ x$st == "xUp" ]];then
+             COLO=${GREEN_F}
+           else
+             COLO=${RED_F}
+           fi
+           echo -e "${COLO}${co}${NORM}"
+        done
+}
+
+function copyFromContainerToContainer {
+        docker cp $1 - | docker cp - $2
+}
+
+function setWorkingContainer {
+  export WORKING_CONTAINER=$1
+  echo -e "Setting default container ${BLUE_F}$WORKING_CONTAINER${NORM}"
+  setPrompt
+}
+
+function listDockerProject {
+  for i in $(ls -ld $dconfig/* |rev|cut -d' ' -f1 |rev|cut -d'/' -f4);do
+  if [[ $WORKING_PROJECT == $i ]];then
+   echo -e "${CYAN_F}$i${NORM}"
+  else
+   echo -e "${MAGENTA_F}$i${NORM}"
+  fi
+  done
+}
+
+function setWorkingProject {
+  if [[ $1 == '' ]];then
+     echo -e "${RED_F}Please provide a project name${NORM}"
+  else
+     if [[ -d $dconfig/$1 ]];then
+        export WORKING_PROJECT=$1
+        echo -e "Setting default project to ${CYAN_F}$WORKING_PROJECT${NORM}"
+        setPrompt
+     else
+       echo -e "${RED_F}Docker Project $1 doesn't exist${NORM}"
+     fi
+  fi
+}
+
+function setPrompt {
+   if [[ $WORKING_CONTAINER == '' ]];then
+        export PS1="${USER}@${HOSTNAME}:\${PWD} \n${WORKING_PROJECT} > "
+   else
+        export PS1="${USER}@${HOSTNAME}:\${PWD} \n${WORKING_PROJECT} - $WORKING_CONTAINER > "
+   fi
+}
+
+function dockerPowerManager {
+   if [[ $1 == 'x' && $WORKING_CONTAINER != '' ]];then
+       c2c=$WORKING_CONTAINER
+   else
+       c2c=${1#x}
+   fi
+
+  case "$2" in
+    0)
+       action="stop" 
+       ;;
+    1)
+       action="start" 
+       ;;
+    2)
+       action="restart" 
+       ;;
+  esac
+ docker $action $c2c
+}
+
+
+#MISC
+. ~/.docker_completion
+cat ~/project_info
+cd ${WS}
+

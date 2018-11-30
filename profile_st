@@ -1,0 +1,8 @@
+#File Deployed Automatically
+#Don't modify it.
+
+. ~/.docker_profile
+
+#TO ADD your own custom command please use the file described here under.
+
+[[ -f ~/custom_profile ]] && . ~/custom_profile
