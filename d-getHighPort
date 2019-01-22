@@ -8,7 +8,7 @@ up=$(echo $range | cut -d '-' -f2)
 for i in $(seq $do 1 $up);do
 echo $i
 done > $bufferFile2
-valur=$(grep -v -f $bufferFile1 $bufferFile2 | tail -1)
+valeur=$(grep -v -f $bufferFile1 $bufferFile2 | tail -1)
 rm -fr /tmp/portPlay
 
-echo "RUNDECK:DATA:HighPort = $valur"
+echo "RUNDECK:DATA:HighPort = $valeur"
