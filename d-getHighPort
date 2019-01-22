@@ -1,12 +1,14 @@
 mkdir /tmp/portPlay
+bufferFile1=/tmp/portPlay/listport.$$
+bufferFile2=/tmp/portPlay/rangeport.$$
 range=$(cat ~/project_info | grep 'dedicated ports' | cut -d':' -f 2 | tr -d ' ')
 do=$(echo $range | cut -d '-' -f1)
 up=$(echo $range | cut -d '-' -f2)
-/$USER/bin/d-listPort > /tmp/portPlay/listport
+/$USER/bin/d-listPort > $bufferFile1
 for i in $(seq $do 1 $up);do
 echo $i
-done > /tmp/portPlay/rangeport
-valur=$(grep -v -f /tmp/portPlay/listport /tmp/portPlay/rangeport | tail -1)
+done > $bufferFile2
+valur=$(grep -v -f $bufferFile1 $bufferFile2 | tail -1)
 rm -fr /tmp/portPlay
 
 echo "RUNDECK:DATA:HighPort = $valur"
